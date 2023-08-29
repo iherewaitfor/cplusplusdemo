@@ -8,9 +8,98 @@
 ```C++
 cl [filename] /d1reportAllClassLayout
 ```
-
+比如
+```
+D:\srccode\cplusplusdemo\classdemo\build>cl ..\classlayout\main.cpp /d1reportAllClassLayout > layout.txt
+```
+然后在layout.txt里搜索 对应的类。比如类名为D，则搜索"class D"。
 # 普通多继承的内存布局
+```C++
+#include <iostream>
+using namespace std; // 采用 4 字节对齐
 
+#pragma pack(4)
+class A
+{
+public:
+    int a;
+    virtual void aPrintf() {
+        std::cout << "This is class B" << "\n";
+    }
+};
+
+class B : public A
+{
+public:
+    int b;
+    virtual void bPrintf() {
+        std::cout << "This is class B" << "\n";
+    }
+};
+
+class C : public A
+{
+public:
+    int c;
+    virtual void cPrintf() {
+        std::cout << "This is class C" << "\n";
+    }
+};
+
+class D : public B, public C
+{
+public:
+    int d;
+    virtual void dPrintf() {
+        std::cout << "This is class D" << "\n";
+    }
+    virtual void cPrintf() {
+        std::cout << "This is class A" << "\n";
+    }
+};
+
+int main() {
+    A a;
+    B b;
+    C c;
+    D d;
+    cout << sizeof(a) << endl;
+    cout << sizeof(b) << endl;
+    cout << sizeof(c) << endl;
+    cout << sizeof(d) << endl;
+    return 0;
+}
+```
+输出为
+```
+8
+12
+12
+28
+```
+
+D类的内存布局为。
+
+```
+class D	size(28):
+	+---
+ 0	| +--- (base class B)
+ 0	| | +--- (base class A)
+ 0	| | | {vfptr}
+ 4	| | | a
+	| | +---
+ 8	| | b
+	| +---
+12	| +--- (base class C)
+12	| | +--- (base class A)
+12	| | | {vfptr}
+16	| | | a
+	| | +---
+20	| | c
+	| +---
+24	| d
+	+---
+```
 
 # 带虚继承的内存布局
 
@@ -71,7 +160,13 @@ int main() {
     return 0;
 }
 ```
-
+结果输出(在32位应用)
+```
+8
+20
+20
+36
+```
 
 可使用命令查看类的对象的内存布局。
 ```
