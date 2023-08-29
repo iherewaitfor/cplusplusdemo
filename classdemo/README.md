@@ -3,12 +3,18 @@
 - [带虚继承的内存布局](#带虚继承的内存布局)
 
 # classlayout
+查看一个文件的所有类的对象内存布局
+
+```C++
+cl [filename] /d1reportAllClassLayout
+```
 
 # 普通多继承的内存布局
 
 
 # 带虚继承的内存布局
 
+源码如下
 ```C++
 #include <iostream>
 using namespace std; // 采用 4 字节对齐
@@ -66,6 +72,7 @@ int main() {
 }
 ```
 
+
 可使用命令查看类的对象的内存布局。
 ```
 cl [filename] /d1reportSingleClassLayout[classname]
@@ -94,5 +101,42 @@ class D	size(36):
 	+--- (virtual base A)
 28	| {vfptr}
 32	| a
+	+---
+```
+
+A的内存布局
+```
+class A	size(8):
+	+---
+ 0	| {vfptr}
+ 4	| a
+	+---
+```
+
+B的内存布局
+```
+class B	size(20):
+	+---
+ 0	| {vfptr}
+ 4	| {vbptr}
+ 8	| b
+	+---
+	+--- (virtual base A)
+12	| {vfptr}
+16	| a
+	+---
+```
+C的内存布局
+
+```
+class C	size(20):
+	+---
+ 0	| {vfptr}
+ 4	| {vbptr}
+ 8	| c
+	+---
+	+--- (virtual base A)
+12	| {vfptr}
+16	| a
 	+---
 ```
