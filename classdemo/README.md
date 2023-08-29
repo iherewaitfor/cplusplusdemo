@@ -328,6 +328,11 @@ cl [filename] /d1reportSingleClassLayout[classname]
 D:\srccode\cplusplusdemo\classdemo\build>cl ..\classlayout\main.cpp /d1reportSingleClassLayoutD > layout.txt
 ```
 D类对象d的内存布局如下。
+可以看到，相比不是虚继承
+- 只有一份虚基类的内存
+  - 非虚继承时，B、C均含一份A的数据
+- 类B、C多了一vbptr
+  - 在vfptr之后
 
 ```
 class D	size(36):
@@ -360,6 +365,10 @@ class A	size(8):
 ```
 
 B的内存布局
+可以看到，相比不是虚继承
+- 把基类A的内存放到了最后
+- 多了vbptr
+  - 在vbptr之后
 ```
 class B	size(20):
 	+---
