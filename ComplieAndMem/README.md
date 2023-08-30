@@ -268,9 +268,9 @@ _main	PROC
 	lea	edx, DWORD PTR $T1[ebp]
 	push	edx
 	call	?add@@YA?AUSum@@HH@Z			; add
-	add	esp, 12					; 0000000cH
-	mov	ecx, DWORD PTR [eax]
-	mov	DWORD PTR $T2[ebp], ecx
+	add	esp, 12					; 0000000cH     弹出调用add的参数列表及返回值地址。
+	mov	ecx, DWORD PTR [eax]				;add返回时，已把临时变量T1的地址给了eax。
+	mov	DWORD PTR $T2[ebp], ecx             ;以下逻辑是T1值赋给T2,然后，T2赋值为sum
 	mov	edx, DWORD PTR [eax+4]
 	mov	DWORD PTR $T2[ebp+4], edx
 	mov	eax, DWORD PTR [eax+8]
@@ -318,20 +318,20 @@ _b$ = 16						; size = 4
 	mov	edx, DWORD PTR _a$[ebp]
 	mov	DWORD PTR _s$[ebp+8], edx
 ; Line 11
-	mov	eax, DWORD PTR $T1[ebp]
+	mov	eax, DWORD PTR $T1[ebp]    ;把add函数中的本地变量s，赋值给main的临时变量T1。这里取的是T1的地址给eax
 	mov	ecx, DWORD PTR _s$[ebp]
-	mov	DWORD PTR [eax], ecx
+	mov	DWORD PTR [eax], ecx       ;把ecx的值传给eax指向的地址。这里eax加了[]
 	mov	edx, DWORD PTR _s$[ebp+4]
 	mov	DWORD PTR [eax+4], edx
 	mov	ecx, DWORD PTR _s$[ebp+8]
 	mov	DWORD PTR [eax+8], ecx
-	mov	eax, DWORD PTR $T1[ebp]
+	mov	eax, DWORD PTR $T1[ebp]    ;把T1地址放到寄存器eax
 ; Line 12
-	mov	ecx, DWORD PTR __$ArrayPad$[ebp]
+	mov	ecx, DWORD PTR __$ArrayPad$[ebp]    ;add函数退出清理栈
 	xor	ecx, ebp
-	call	@__security_check_cookie@4
-	mov	esp, ebp
-	pop	ebp
+	call	@__security_check_cookie@4      ;检查是否栈溢出
+	mov	esp, ebp							;把栈底值ebp，赋给栈顶值esp。
+	pop	ebp									;从栈中弹出值给ebp。（这里ebp的值，就是main函数的栈底）
 	ret	0
 ?add@@YA?AUSum@@HH@Z ENDP				; add
 _TEXT	ENDS
