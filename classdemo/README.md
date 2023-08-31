@@ -2,6 +2,8 @@
 - [基类无虚函数的内存布局](#基类无虚函数的内存布局)
 - [普通多继承的内存布局](#普通多继承的内存布局)
 - [带虚继承的内存布局](#带虚继承的内存布局)
+  - [虚函数表](#虚函数表)
+  - [虚基表](#虚基表)
 
 # classlayout
 查看一个文件的所有类的对象内存布局
@@ -395,3 +397,148 @@ class C	size(20):
 16	| a
 	+---
 ```
+
+## 虚函数表
+```
+class D	size(36):
+	+---
+ 0	| +--- (base class B)
+ 0	| | {vfptr}
+ 4	| | {vbptr}
+ 8	| | b
+	| +---
+12	| +--- (base class C)
+12	| | {vfptr}
+16	| | {vbptr}
+20	| | c
+	| +---
+24	| d
+	+---
+	+--- (virtual base A)
+28	| {vfptr}
+32	| a
+	+---
+
+D::$vftable@B@:
+	| &D_meta
+	|  0
+ 0	| &B::bPrintf 
+ 1	| &D::dPrintf 
+
+D::$vftable@C@:
+	| -12
+ 0	| &D::cPrintf 
+
+D::$vbtable@B@:
+ 0	| -4
+ 1	| 24 (Dd(B+4)A)
+
+D::$vbtable@C@:
+ 0	| -4
+ 1	| 12 (Dd(C+4)A)
+
+D::$vftable@A@:
+	| -28
+ 0	| &A::aPrintf 
+```
+
+特别摘出来。
+可以看出，其实有3个虚函数表。具体偏移对照类的内存布局
+- D::$vftable@B@:
+    - 该表的指针位置在类内存偏移为0
+    - 可以看出D类没有重写父类B的bPrintf函数
+    - D类包括了所有的B类的虚函数，然后是D类自己定义的虚函数
+- D::$vftable@C@:
+    - 该表的指针位置在类内存偏移为12
+    - 在这里可以看到，D类重写了父类C的cPrintf函数。
+- D::$vftable@A@:
+    - 该表的指针位置在类内存偏移28
+    - 包含了所有的A的虚函数
+    - D类没有重写A的虚函数
+```
+D::$vftable@B@:
+	| &D_meta
+	|  0
+ 0	| &B::bPrintf 
+ 1	| &D::dPrintf 
+
+D::$vftable@C@:
+	| -12
+ 0	| &D::cPrintf 
+
+D::$vbtable@B@:
+ 0	| -4
+ 1	| 24 (Dd(B+4)A)
+
+D::$vbtable@C@:
+ 0	| -4
+ 1	| 12 (Dd(C+4)A)
+
+D::$vftable@A@:
+	| -28
+ 0	| &A::aPrintf 
+```
+
+## 虚基表
+
+```
+class D	size(36):
+	+---
+ 0	| +--- (base class B)
+ 0	| | {vfptr}
+ 4	| | {vbptr}
+ 8	| | b
+	| +---
+12	| +--- (base class C)
+12	| | {vfptr}
+16	| | {vbptr}
+20	| | c
+	| +---
+24	| d
+	+---
+	+--- (virtual base A)
+28	| {vfptr}
+32	| a
+	+---
+
+D::$vftable@B@:
+	| &D_meta
+	|  0
+ 0	| &B::bPrintf 
+ 1	| &D::dPrintf 
+
+D::$vftable@C@:
+	| -12
+ 0	| &D::cPrintf 
+
+D::$vbtable@B@:
+ 0	| -4
+ 1	| 24 (Dd(B+4)A)
+
+D::$vbtable@C@:
+ 0	| -4
+ 1	| 12 (Dd(C+4)A)
+
+D::$vftable@A@:
+	| -28
+ 0	| &A::aPrintf 
+```
+
+单独摘出来。可以看出来有两个虚基表
+- D::$vbtable@B@:
+  - 该表指针的位置，位于基类B的位置偏移4
+  - 虚基类A的偏移为该vbptr指针后的24
+- D::$vbtable@C@:
+  - 该表指针的位置，位于基类D的位置偏移4
+  - 虚基类A的偏移为该vbptr指针后的12
+```
+D::$vbtable@B@:
+ 0	| -4
+ 1	| 24 (Dd(B+4)A)
+
+D::$vbtable@C@:
+ 0	| -4
+ 1	| 12 (Dd(C+4)A)
+```
+
+
