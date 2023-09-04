@@ -6,6 +6,7 @@
 - [引用](#引用)
 - [引用折叠](#引用折叠)
 - [std::move实现原理](#stdmove实现原理)
+- [std::forward实现原理](#stdforward实现原理)
 - [简版函数压栈](#简版函数压栈)
 - [函数压栈](#函数压栈)
 
@@ -259,6 +260,85 @@ _NODISCARD constexpr int&& move(int& _Arg) noexcept { // forward _Arg as movable
 ```
 
 可以看到，最终是通过 static_cast进行的强转，通过模板类型remove_reference去掉引用，取得无引用类型。
+
+
+# std::forward实现原理
+是模板函数
+- 函数参数去引用，组成左引用
+  - 无论入参是什么，都会变成左引用
+  - remove_reference_t<_Ty>& _Arg
+    - 若具体类型为int，去引用后为int& _Arg
+- 通过 static_cast<_Ty&&>(_Arg)强转
+  - 入参为左引用
+    - static_cast<int& &&>(_Arg)
+    - 则转 int& &&，折叠后变int&
+    - static_cast<int&>(_Arg)
+  - 入参为右引用
+    - static_cast<int&& &&>(_Arg)
+    - 则转 int&& &&，折叠后变int&&
+    - static_cast<int&&>(_Arg)
+  - 入参为int
+    - static_cast<int&& &&>(_Arg)
+    - 直接强转转int&&
+
+
+其是一个模板函数
+```C++
+template <class _Ty>
+_NODISCARD constexpr _Ty&& forward(
+    remove_reference_t<_Ty>& _Arg) noexcept { // forward an lvalue as either an lvalue or an rvalue
+    return static_cast<_Ty&&>(_Arg);
+}
+```
+比如
+```c++
+    int&& rRef = 1;            // 临时对象是右值
+    std::forward<int>(rRef);
+```
+注意，参考上面remove_reference_t<_Ty>是去引用的。最终取到int。
+当传和rRef为int&&时，
+展开后就是
+```C++
+template <class int&&>
+_NODISCARD constexpr int&& && forward(
+    int & _Arg) noexcept { // forward an lvalue as either an lvalue or an rvalue
+    return static_cast<int&& &&>(_Arg);
+}
+```
+引用折叠后，变成
+```C++
+template <class int&&>
+_NODISCARD constexpr int&& forward(
+    int & _Arg) noexcept { // forward an lvalue as either an lvalue or an rvalue
+    return static_cast<int&&>(_Arg);
+}
+```
+
+而如果传入的是int&类型是
+```C++
+template <class _Ty>
+_NODISCARD constexpr _Ty&& forward(
+    remove_reference_t<_Ty>& _Arg) noexcept { // forward an lvalue as either an lvalue or an rvalue
+    return static_cast<_Ty&&>(_Arg);
+}
+```
+展开后
+```C++
+template <class int&>
+_NODISCARD constexpr int& && forward(
+    int & _Arg) noexcept { // forward an lvalue as either an lvalue or an rvalue
+    return static_cast<int& &&>(_Arg);
+}
+```
+引用折叠后，得到
+```C++
+template <class int&>
+_NODISCARD constexpr int& forward(
+    int & _Arg) noexcept { // forward an lvalue as either an lvalue or an rvalue
+    return static_cast<int&>(_Arg);
+}
+```
+即，传入的是int&，返回的也是int&
 
 
 
