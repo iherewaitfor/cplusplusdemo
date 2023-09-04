@@ -17,7 +17,7 @@ public:
         m_ptr = t;
         // 初始化引用计数
         m_ref_count = new atomic_int(1);
-        cout << "myshared_ptr num " << *m_ref_count << endl;
+        cout << "myshared_ptr construct num " << *m_ref_count << endl;
     }
     //拷贝构造函数
     myshared_ptr(const myshared_ptr& ptr) {
@@ -25,25 +25,35 @@ public:
         // 引用计数加1
         m_ref_count = ptr.m_ref_count;
         (*m_ref_count)++;
-        cout << "myshared_ptr num " << *m_ref_count << endl;
+        cout << "myshared_ptr copy construct num " << *m_ref_count << endl;
     }
     //to do 移动构造函数
     myshared_ptr( myshared_ptr&& ptr) {
         m_ptr = ptr.m_ptr;
         ptr.m_ptr = nullptr;
-        // 引用计数加1
         m_ref_count = ptr.m_ref_count;
         ptr.m_ref_count = nullptr;
-        cout << "myshared_ptr num " << *m_ref_count << endl;
+        cout << "myshared_ptr move construct num " << *m_ref_count << endl;
     }
 
     // 重载operator=，然后将新的对象引用次数加一。
+    // 赋值操作符是两个现有对象的操作。把一个对象给另一个对象。
     myshared_ptr& operator =(const myshared_ptr& ptr) {
+        //先处理本myshared_ptr原来管理的指针的逻辑。
+        if (m_ptr) {
+            //交出原来指针的管理权。若自己是最后的管理者，则释放指针。
+            if (--(*m_ref_count) == 0) {
+                delete m_ptr;
+                m_ptr = nullptr;
+            }
+        }
+        //处理新管理的指针。
         m_ptr = ptr.m_ptr;
+
         // 引用计数加1
         m_ref_count = ptr.m_ref_count;
         (*m_ref_count)++;
-        cout<< "myshared_ptr num " << *m_ref_count << endl;
+        cout<< "myshared_ptr operator = num " << *m_ref_count << endl;
         return *this;
     }
     // 析构
