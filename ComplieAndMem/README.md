@@ -2,8 +2,10 @@
 
 - [Complie And Memeory 编译及内存相关](#complie-and-memeory-编译及内存相关)
 - [寄存器](#寄存器)
-  - [常见寄存器的分类](#常见寄存器的分类)
+	- [常见寄存器的分类](#常见寄存器的分类)
 - [引用](#引用)
+- [引用折叠](#引用折叠)
+- [std::move实现原理](#stdmove实现原理)
 - [简版函数压栈](#简版函数压栈)
 - [函数压栈](#函数压栈)
 
@@ -178,6 +180,89 @@ _TEXT	ENDS
 END
 
 ```
+# 引用折叠
+只有右右时为右，其他都为左
+- 左左得左
+- 左右得左
+- 右左得左
+- 右右得右
+# std::move实现原理
+
+std::move实现
+- 通过remove_reference_t<_Ty>取得去掉引用后的类型type
+- 通过static_cast将类型转换为右值
+  - 取得类型后是static_cast<type&&>(_Arg)。
+```C++
+template <class _Ty>
+_NODISCARD constexpr remove_reference_t<_Ty>&& move(_Ty&& _Arg) noexcept { // forward _Arg as movable
+    return static_cast<remove_reference_t<_Ty>&&>(_Arg);
+}
+```
+依赖的remove_reference_t<_Ty>
+```C++
+template <class _Ty>
+using remove_reference_t = typename remove_reference<_Ty>::type;
+```
+以下remove_reference中，无论转入的参数是_Ty、_Ty&、_Ty&&中的哪一种，remove_reference::type，都把引用去掉了。
+比如remove_reference<int>(i)。无论变量i是int、int&、还是int&&，remove_reference<int>::type，都是int.
+```C++
+template <class _Ty>
+struct remove_reference {
+    using type                 = _Ty;
+    using _Const_thru_ref_type = const _Ty;
+};
+
+template <class _Ty>
+struct remove_reference<_Ty&> {
+    using type                 = _Ty;
+    using _Const_thru_ref_type = const _Ty&;
+};
+
+template <class _Ty>
+struct remove_reference<_Ty&&> {
+    using type                 = _Ty;
+    using _Const_thru_ref_type = const _Ty&&;
+};
+```
+
+比如
+```C++
+int a = 1;
+int &b = a;// b为左引用int&
+int&& rc = std::move(b);
+```
+其中std::move(b)
+是一个模板函数，
+```C++
+template <int&>
+_NODISCARD constexpr remove_reference_t<int&>&& move(int& && _Arg) noexcept { // forward _Arg as movable
+    return static_cast<remove_reference_t<int&>&&>(_Arg);
+}
+```
+展开remove_reference_t<int&>
+注意使用左引用版本
+```C++
+template <class int>
+struct remove_reference<int&> {
+    using type                 = int;
+    using _Const_thru_ref_type = const int&;
+};
+```
+
+则remove_reference<int&>::type为int，替换回move模板函数得到。
+其中int& && _Arg通过引用折叠，变成int& _Arg.
+```C++
+template <int&>
+_NODISCARD constexpr int&& move(int& _Arg) noexcept { // forward _Arg as movable
+    return static_cast<int&&>(_Arg);
+}
+```
+
+可以看到，最终是通过 static_cast进行的强转，通过模板类型remove_reference去掉引用，取得无引用类型。
+
+
+
+
 
 # 简版函数压栈
 调用add的压栈顺序b-->a
