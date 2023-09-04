@@ -65,8 +65,10 @@ public:
             if (--(*m_ref_count) == 0)
             {
                 cout << "~myshared_ptr delete " << *m_ref_count << endl;
-                delete m_ref_count;
-                delete m_ptr;
+                delete m_ref_count; //释放计数器
+                if (m_ptr) {
+                    delete m_ptr; //释放被管理对象
+                }
             }
             else {
                 cout << "~myshared_ptr delete " << *m_ref_count << endl;
@@ -117,9 +119,29 @@ void test()
     cout << "A num " << a.use_count() << endl;
     cout << "B num " << b.use_count() << endl;
 }
+void testoperatorequal() {
+    myshared_ptr<B> pb1(new B);
+    myshared_ptr<B> pb2(new B);
+    pb1 = pb2;
+    cout << "pb2 num " << pb2.use_count() << endl;
+}
+void testcopy() {
+    myshared_ptr<B> pb1(new B);
+    myshared_ptr<B> pb2(pb1);
+    cout << "pb2 num " << pb2.use_count() << endl;
+}
+void testnullequal() {
+    myshared_ptr<B> pb2;
+    myshared_ptr<B> pb1(new B);
+    pb2 = pb1;
+    cout << "pb2 num " << pb2.use_count() << endl;
+}
 
 int main(int argc, char* argv[])
 {
-    test();
+    //test();
+    //testoperatorequal();
+    testnullequal();
+    //testcopy();
 }
 
