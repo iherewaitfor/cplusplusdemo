@@ -10,3 +10,4 @@ project (ComplieAndMem)
 set(TARGET_OUT_DIR "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
 add_subdirectory(reference)
+add_subdirectory(mysharedptr)
