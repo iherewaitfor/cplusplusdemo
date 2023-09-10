@@ -189,10 +189,16 @@ END
 - 右右得右
 # std::move实现原理
 
+关键记忆点
+- 返回值和函数内部转换使用了remove_reference_t
+- 与std::forward的不同
+  - std::forwad只在函数函数处使用了remove_reference_t
+
 std::move实现
 - 通过remove_reference_t<_Ty>取得去掉引用后的类型type
 - 通过static_cast将类型转换为右值
   - 取得类型后是static_cast<type&&>(_Arg)。
+
 ```C++
 template <class _Ty>
 _NODISCARD constexpr remove_reference_t<_Ty>&& move(_Ty&& _Arg) noexcept { // forward _Arg as movable
@@ -263,6 +269,12 @@ _NODISCARD constexpr int&& move(int& _Arg) noexcept { // forward _Arg as movable
 
 
 # std::forward实现原理
+
+关键记忆点
+- std::forwad只在函数函数处使用了remove_reference_t
+- 与std::move的不同
+  - std::move返回值和函数内部转换都使用了remove_reference_t
+
 是模板函数
 - 函数参数去引用，组成左引用
   - 无论入参是什么，都会变成左引用
