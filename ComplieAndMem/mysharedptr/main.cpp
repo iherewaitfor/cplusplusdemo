@@ -11,7 +11,7 @@ private:
 
 public:
     // 空构造。
-    myshared_ptr() :m_ptr(NULL), m_ref_count(NULL) {}
+    myshared_ptr() :m_ptr(nullptr), m_ref_count(nullptr) {}
     // 构造函数
     myshared_ptr(T* t) {
         m_ptr = t;
@@ -24,7 +24,9 @@ public:
         m_ptr = ptr.m_ptr;
         // 引用计数加1
         m_ref_count = ptr.m_ref_count;
-        (*m_ref_count)++;
+        if (m_ref_count) {
+            (*m_ref_count)++;
+        }
         cout << "myshared_ptr copy construct num " << *m_ref_count << endl;
     }
     //to do 移动构造函数
@@ -42,7 +44,7 @@ public:
         //先处理本myshared_ptr原来管理的指针的逻辑。
         if (m_ptr) {
             //交出原来指针的管理权。若自己是最后的管理者，则释放指针。
-            if (--(*m_ref_count) == 0) {
+            if (m_ref_count && --(*m_ref_count) == 0) {
                 delete m_ptr;
                 m_ptr = nullptr;
             }
@@ -52,7 +54,9 @@ public:
 
         // 引用计数加1
         m_ref_count = ptr.m_ref_count;
-        (*m_ref_count)++;
+        if (m_ref_count) {
+            (*m_ref_count)++;
+        }
         cout<< "myshared_ptr operator = num " << *m_ref_count << endl;
         return *this;
     }
