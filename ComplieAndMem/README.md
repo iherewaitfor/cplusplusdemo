@@ -9,6 +9,7 @@
 - [std::forward实现原理](#stdforward实现原理)
 - [简版函数压栈](#简版函数压栈)
 - [函数压栈](#函数压栈)
+- [shared\_ptr智能指针实现](#shared_ptr智能指针实现)
 
 # Complie And Memeory 编译及内存相关
 
@@ -606,4 +607,90 @@ _b$ = 16						; size = 4
 _TEXT	ENDS
 END
 
+```
+
+# shared_ptr智能指针实现
+
+- template<class T>
+- 关键成员
+  - T* m_ptr
+  - atomic_int* m_refcount
+- 构造赋值和析构
+  - 构造函数
+  - 拷贝构造函数
+    - return *this;
+  - 赋值运算符
+  - 析构
+- 操作函数
+  - operator ->()
+  - operator *()
+  - get()
+  - useCount()
+
+```C++
+#include <atomic>
+using namespace std;
+template<class T>
+class myshared_ptr {
+private:
+    T* m_ptr;
+    atomic_int* m_refcount;
+public:
+    myshared_ptr():m_ptr(nullptr),m_refcount(nullptr){}
+    myshared_ptr(T* p) :m_ptr(p), m_refcount(new atomic_int(1)) {}
+    //拷贝构造函数
+    myshared_ptr(const myshared_ptr& other) {
+        //从无到有
+        m_ptr = other.m_ptr;
+        m_refcount = other.m_refcount;
+        if (m_refcount) {
+            ++(*m_refcount);
+        }
+    }
+    ~myshared_ptr() {
+        if (m_refcount && --(*m_refcount) == 0) {
+            if (m_ptr) {
+                delete m_ptr;
+                m_ptr = nullptr;
+            }
+            delete m_refcount;
+            m_refcount = nullptr;
+        }
+    }
+    //赋值运算符
+    myshared_ptr& operator = (const myshared_ptr& other) {
+        //两个对象之间的赋值
+        if (m_refcount) {
+            if (--(*m_refcount) == 0) {
+                if (m_ptr) {
+                    delete m_ptr;
+                    m_ptr = nullptr;
+                }
+                delete m_refcount;
+                m_refcount = nullptr;
+            }
+        }
+        m_ptr = other.m_ptr;
+        m_refcount = other.m_refcount;
+        if (m_refcount) {
+            ++(*m_refcount);
+        }
+        return *this;
+    }
+    T* operator ->() {
+        return m_ptr;
+    }
+    T operator *() {
+        return *m_ptr;
+    }
+    T* get() {
+        return m_ptr;
+    }
+    int use_count() {
+        if (m_refcount) {
+            return *m_refcount;
+        }
+        return 0;
+    }
+};
 ```
